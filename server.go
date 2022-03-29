@@ -2,15 +2,26 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq"
+)
+
+const (
+	host     = "localhost"
+	port     = 5432
+	user     = "postgres"
+	password = "1"
+	dbname   = "postgres"
 )
 
 func main() {
 	e := echo.New()
+	e.Use(middleware.Recover())
 
 	e.GET("/hello", hello)
 	e.GET("/users/:id", getUser)
@@ -35,13 +46,19 @@ func GetDB() *sql.DB {
 	var err error
 
 	if db == nil {
-		connStr := "user=postgres dbname=postgres"
+		connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 		db, err = sql.Open("postgres", connStr)
 		if err != nil {
 			panic(err)
 		}
 	}
 
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
 	return db
 }
 
@@ -88,9 +105,9 @@ func saveUser(c echo.Context) error {
 	name := c.FormValue("name")
 	email := c.FormValue("email")
 	db := GetDB()
-	_, err := db.Exec("INSERT INTO postgres (username, email) VALUES($1, $2)", name, email)
+	_, err := db.Exec("INSERT INTO accounts (username, email) VALUES($1, $2)", name, email)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	return c.String(http.StatusOK, "name:"+name+", email:"+email)
 }
