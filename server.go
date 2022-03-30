@@ -26,6 +26,7 @@ func main() {
 	e.GET("/hello", hello)
 	e.GET("/users/:id", getUser)
 	e.POST("/users", saveUser)
+	e.PUT("/users", editUser)
 
 	s := http.Server{
 		Addr:    ":8080",
@@ -129,6 +130,22 @@ func saveUser(c echo.Context) error {
 	_, err := db.Exec("INSERT INTO accounts (username, email) VALUES($1, $2)", name, email)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return c.String(http.StatusOK, "name:"+name+", email:"+email)
+}
+
+func editUser(c echo.Context) error {
+	name := c.FormValue("name")
+	email := c.FormValue("email")
+	db := GetDB()
+
+	sqlUpdate := `
+	UPDATE accounts
+	SET email = $1
+	WHERE username = $2;`
+	_, err := db.Exec(sqlUpdate, email, name)
+	if err != nil {
+		panic(err)
 	}
 	return c.String(http.StatusOK, "name:"+name+", email:"+email)
 }
