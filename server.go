@@ -96,7 +96,28 @@ func hello(c echo.Context) error {
 func getUser(c echo.Context) error {
 	// User ID from path `users/:id`
 	id := c.Param("id")
-	return c.String(http.StatusOK, id)
+
+	db := GetDB()
+	rows, err := db.Query("SELECT username FROM accounts WHERE user_id = $1", id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	defer rows.Close()
+	names := make([]string, 0)
+	for rows.Next() {
+		var username string
+		err = rows.Scan(&username)
+		if err != nil {
+			panic(err)
+		}
+		names = append(names, username)
+	}
+	err = rows.Err()
+	if err != nil {
+		panic(err)
+	}
+
+	return c.String(http.StatusOK, names[0])
 }
 
 //for echo
