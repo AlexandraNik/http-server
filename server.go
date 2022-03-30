@@ -27,6 +27,7 @@ func main() {
 	e.GET("/users/:id", getUser)
 	e.POST("/users", saveUser)
 	e.PUT("/users", editUser)
+	e.DELETE("/users", deleteUser)
 
 	s := http.Server{
 		Addr:    ":8080",
@@ -131,7 +132,7 @@ func saveUser(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	return c.String(http.StatusOK, "name:"+name+", email:"+email)
+	return c.String(http.StatusOK, "User name:"+name+", email:"+email+" is created")
 }
 
 func editUser(c echo.Context) error {
@@ -147,5 +148,19 @@ func editUser(c echo.Context) error {
 	if err != nil {
 		panic(err)
 	}
-	return c.String(http.StatusOK, "name:"+name+", email:"+email)
+	return c.String(http.StatusOK, "User "+name+", email:"+email+" is updated")
+}
+
+func deleteUser(c echo.Context) error {
+	name := c.FormValue("name")
+	db := GetDB()
+
+	sqlDelete := `
+	DELETE FROM accounts WHERE username = $1;`
+	_, err := db.Exec(sqlDelete, name)
+	if err != nil {
+		panic(err)
+	}
+
+	return c.String(http.StatusOK, "User "+name+" is deleted")
 }
